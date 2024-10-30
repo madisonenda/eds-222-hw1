@@ -100,15 +100,15 @@ The goal of pollution monitoring in Lahore is to measure the average pollution c
 
 1.  What is the *population* in this setting? Please be precise.
 
-    -   The population in this setting is the entire volume of air in the city of Lahore (the atmosphere encompassing the city)
+    -   The population in this setting is the entire volume of air in the city of Lahore (the atmosphere encompassing the city) from November of 2018 to November of 2019 (1 year).
 
 2.  What are the *samples* in this setting? Please be precise.
 
-    -   The samples are specific samples of air quality taken at 14 or 5 unique locations around the city.
+    -   The samples are the crowd-sourced data, and the government sourced data.
 
 3.  These samples were not randomly collected from across locations in Lahore. Given the sampling approaches described above, discuss possible biases that may enter when we use these samples to construct estimates of population parameters.
 
-    -   It may be that the samples were all taken from locations close to one another, in which case the results will be skewed towards the conditions of that location (a part of the city with a lot of major environmental research occurring might be the most industrial area). It may be that all samples were taken from a low altitude, and can only really tell us above the air pollution at say sea-level for example, within this city.
+    -   Samples that are not randomly collected will introduce bias into our analysis, as we may associate changes in our pollution levels to the wrong variables ( all change in y will be associated to x as we omit other potential variables). Therefore, our summary statistics will be less representative of the actual values of the population.
 
 ### Question 3
 
@@ -139,13 +139,11 @@ print(min(crowdsourced[["PM"]]))
 
 -   Discuss any key differences that you see between these two samples.
 
-    -   The crowd sourced data set had a much higher mean and a larger range for the PM data.
+    -   The crowd sourced data set had a much higher mean and a larger range for the PM column, as well as many more observations than the government data. This could indicate the sample size of the government data introduces bias (operating under the assumption that as sample size approaches infinity, sample mean approaches the actual mean of the population), by misrepresenting the sample statistics.
 
 -   Are the differences in mean pollution as expected, given what we know about the sampling strategies?
 
-    -   Yes, it would make sense that there are differences occurring in the sample means from the two data sets. The number of monitors and observances for the crowd sourced data is higher, and therefore their sample mean may be more accurate, but there is still a lot of implicit bias in sampling strategies.
-
-    -   In addition, air quality fluctuates with weather conditions, time of year, wind patterns, etc.
+    -   Yes, it would make sense that there are differences occurring in the sample means from the two data sets. The number of monitors and observances for the crowd sourced data is higher, and therefore their sample mean may be more accurate, as increased sample size increases the accuracy of our mean.
 
 ### Question 4
 
@@ -157,21 +155,14 @@ Use the location of the air pollution stations for both of the sampling strategi
 
 ```{r}
 # Making the crowd sourced monitor map 
-ggplot(data= crowdsourced, aes(x= longitude, y= latitude)) +
-  geom_point(color= "blue") +
+ggplot() +
+  geom_point(data= crowdsourced, aes(x= longitude, y= latitude, color= "red")) +
+  geom_point(data= govt, aes(x= longitude, y= latitude, color= "blue"))+ 
   labs(title= "Location of Crowdsourced Air Quality Monitors in Lahore",
       x= "Longitude",
-      y= "Latitude")
+      y= "Latitude")+
+  scale_color_hue(labels= c("Government Sites", "Crowdsourced Sites"))
   
-```
-
-```{r}
-# Making the government data map 
-ggplot(data= govt, aes(x= longitude, y= latitude)) +
-  geom_point(color= "red") +
-  labs(title= "Location of Government Air Quality Monitors in Lahore",
-      x= "Longitude",
-      y= "Latitude")
 ```
 
 ### Question 5
@@ -200,20 +191,29 @@ all_air_data <- bind_rows(crowdsourced, govt)
 
 
 # Getting a random sample of 1000 values from the combined data
-sample_PM <-sample_n(all_air_data, 1000)
+sample_PM <- sample_n(all_air_data, 1000)
 
+# Printing the dimensions of the data set for random sampling
+dim(sample_PM)
 ```
 
 Second, create a *stratified random sample*. Do so by (i) stratifying your pooled data-set into strata of 0.01 degrees of latitude, and (ii) randomly sampling 200 air pollution observations from each stratum.
 
 ```{r}
 # Randomly sampling 200 air pollution observations from each strata
-stratified_sample <- all_air_data %>%
-  group_by(latitude) %>%
-  sample_frac(size= 0.10)
+set.seed(4321)
 
-strat_sample_PM <-sample_n(stratified_sample, 200)
+all_air<-all_air_data %>%
+  mutate(lat_r = round(latitude, digits= 2))
+
+stratified_sample <- all_air %>%
+  group_by(lat_r) %>%
+  slice_sample(n= 40)
+
+# Printing the dimensions of the data set for stratified sampling
+dim(stratified_sample)
 ```
+
 
 #### Question 6.2
 
@@ -225,6 +225,8 @@ print(mean(sample_PM[["PM"]]))
 
 # Finding the mean of the 200 stratified random samples
 
+print(mean(stratified_sample[["PM"]]))
+  
 ```
 
--   Unfortunately, I have not been able to get my stratified sample to work, but utilizing the randomly sampled answer from 1000 observances, I was able to obtain a mean that is closer to NASA's value than the original government data. Likely, stratifying would provide a more accurate answer.
+-   The random sampling from the pooled data set (both the government and crowd-sourced samples) produced a mean closer to the NASA value of 89.2 than the original government data set alone. Using the stratified sampling method for the pooled data set, we were able to obtain an even closer value than the random sampling, and thus would be the best fit. I would suggest the Prime Minister employ a stratified sampling method for analyzing air pollution in Pakistan, if possible matching the sample size of the crowd-sourced data, as the accuracy of the mean increases with increased sample size.
